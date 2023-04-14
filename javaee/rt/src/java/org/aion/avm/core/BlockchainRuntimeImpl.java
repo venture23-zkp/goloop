@@ -20,7 +20,6 @@ import foundation.icon.ee.util.LogMarker;
 import foundation.icon.ee.util.Shadower;
 import foundation.icon.ee.util.Unshadower;
 import foundation.icon.ee.util.ValueCodec;
-import foundation.icon.ee.util.bls12381.BLS12381;
 import i.GenericPredefinedException;
 import i.IBlockchainRuntime;
 import i.IInstrumentation;
@@ -379,16 +378,26 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         byte[] dataBytes = data.getUnderlying();
         int nPoints;
         switch (curve.getUnderlying()) {
+            case "bn128-g1":
+                nPoints = dataBytes.length / Crypto.BLS12381_G1_LEN;
+                if (!compressed) nPoints /= 2;
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(300 * nPoints);
+                return new ByteArray(Crypto.bn128G1Add(dataBytes, compressed));
+            case "bn128-g2":
+                nPoints = dataBytes.length / Crypto.BLS12381_G2_LEN;
+                if (!compressed) nPoints /= 2;
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(8 * 300 * nPoints);
+                return new ByteArray(Crypto.bn128G2Add(dataBytes, compressed));
             case "bls12-381-g1":
-                nPoints = dataBytes.length / BLS12381.G1_LEN;
-                if (compressed) nPoints /= 2;
+                nPoints = dataBytes.length / Crypto.BLS12381_G1_LEN;
+                if (!compressed) nPoints /= 2;
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(1000 * nPoints);
-                return new ByteArray(BLS12381.g1Add(dataBytes, compressed));
+                return new ByteArray(Crypto.bls12381G1Add(dataBytes, compressed));
             case "bls12-381-g2":
-                nPoints = dataBytes.length / BLS12381.G2_LEN;
-                if (compressed) nPoints /= 2;
+                nPoints = dataBytes.length / Crypto.BLS12381_G2_LEN;
+                if (!compressed) nPoints /= 2;
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(8 * 1000 * nPoints);
-                return new ByteArray(BLS12381.g2Add(dataBytes, compressed));    
+                return new ByteArray(Crypto.bls12381G2Add(dataBytes, compressed));    
         }
         throw new IllegalArgumentException("Unsupported curve " + curve);
     }
@@ -401,12 +410,18 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         byte[] dataBytes = data.getUnderlying();
         byte[] scalarBytes = scalar.getUnderlying();
         switch (curve.getUnderlying()) {
+            case "bn128-g1":
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(12000);
+                return new ByteArray(Crypto.bn128G1ScalarMul(scalarBytes, dataBytes, compressed));
+            case "bn128-g2":
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(50000);
+                return new ByteArray(Crypto.bn128G2ScalarMul(scalarBytes, dataBytes, compressed));
             case "bls12-381-g1":
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(20000);
-                return new ByteArray(BLS12381.g1ScalarMul(scalarBytes, dataBytes, compressed));
+                return new ByteArray(Crypto.bls12381G1ScalarMul(scalarBytes, dataBytes, compressed));
             case "bls12-381-g2":
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(95000);
-                return new ByteArray(BLS12381.g2ScalarMul(scalarBytes, dataBytes, compressed));    
+                return new ByteArray(Crypto.bls12381G2ScalarMul(scalarBytes, dataBytes, compressed));    
             }
             throw new IllegalArgumentException("Unsupported curve " + curve);
         }
@@ -415,13 +430,19 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
     public boolean avm_ecPairingCheck(s.java.lang.String curve, ByteArray data, boolean compressed) {
         Objects.requireNonNull(curve, "Elliptic curve can't be NULL");
         Objects.requireNonNull(data, "Data can't be NULL");
+        int nPairs;
         byte[] dataBytes = data.getUnderlying();
         switch (curve.getUnderlying()) {
+            case "bn128":
+                nPairs = dataBytes.length / (Crypto.BN128_G1_LEN + Crypto.BN128_G2_LEN);
+                if (!compressed) nPairs /= 2;
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(80000 + 60000 * nPairs);
+                return Crypto.bn128PairingCheck(dataBytes, compressed);   
             case "bls12-381":
-                int nPairs = dataBytes.length / (BLS12381.G1_LEN + BLS12381.G2_LEN);
-                if (compressed) nPairs /= 2;
+                nPairs = dataBytes.length / (Crypto.BLS12381_G1_LEN + Crypto.BLS12381_G2_LEN);
+                if (!compressed) nPairs /= 2;
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(200000 + 40000 * nPairs);
-                return BLS12381.pairingCheck(dataBytes, compressed);   
+                return Crypto.bls12381PairingCheck(dataBytes, compressed);   
         }
         throw new IllegalArgumentException("Unsupported curve " + curve);
     }
