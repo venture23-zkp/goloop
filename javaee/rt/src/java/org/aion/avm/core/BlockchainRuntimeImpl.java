@@ -43,7 +43,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The implementation of IBlockchainRuntime which is appropriate for exposure as a shadow Object instance within a DApp.
+ * The implementation of IBlockchainRuntime which is appropriate for exposure as
+ * a shadow Object instance within a DApp.
  */
 public class BlockchainRuntimeImpl implements IBlockchainRuntime {
     private static final Logger logger = LoggerFactory.getLogger(BlockchainRuntimeImpl.class);
@@ -65,12 +66,12 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
     private s.java.math.BigInteger nonceCache;
 
     public BlockchainRuntimeImpl(IExternalState externalState,
-                                 TransactionTask task,
-                                 Address transactionSender,
-                                 Address transactionDestination,
-                                 Transaction tx,
-                                 IRuntimeSetup thisDAppSetup,
-                                 LoadedDApp dApp) {
+            TransactionTask task,
+            Address transactionSender,
+            Address transactionDestination,
+            Transaction tx,
+            IRuntimeSetup thisDAppSetup,
+            LoadedDApp dApp) {
         this.externalState = externalState;
         this.task = task;
         this.transactionSender = transactionSender;
@@ -167,10 +168,10 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
 
     @Override
     public IObject avm_call(s.java.lang.Class<?> cls,
-                            s.java.math.BigInteger value,
-                            p.score.Address targetAddress,
-                            s.java.lang.String method,
-                            IObjectArray params) {
+            s.java.math.BigInteger value,
+            p.score.Address targetAddress,
+            s.java.lang.String method,
+            IObjectArray params) {
         if (value == null) {
             value = s.java.math.BigInteger.avm_ZERO;
         }
@@ -179,15 +180,14 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         }
         var dataObj = Map.of(
                 "method", method.getUnderlying(),
-                "params", getUnderlyingObjects(params)
-        );
+                "params", getUnderlyingObjects(params));
         return messageCall(cls, value, targetAddress, "call", dataObj);
     }
 
     @Override
     public p.score.Address avm_deploy(p.score.Address target,
-                                      ByteArray content,
-                                      IObjectArray params) {
+            ByteArray content,
+            IObjectArray params) {
         Objects.requireNonNull(content, "Content cannot be NULL");
         if (target == null) {
             // make cx000...000
@@ -198,8 +198,7 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         var dataObj = Map.of(
                 "contentType", "application/java",
                 "content", content.getUnderlying(),
-                "params", getUnderlyingObjects(params)
-        );
+                "params", getUnderlyingObjects(params));
         return (p.score.Address) messageCall(
                 target.avm_getClass(),
                 s.java.math.BigInteger.avm_ZERO,
@@ -220,10 +219,10 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
     }
 
     private IObject messageCall(s.java.lang.Class<?> cls,
-                                s.java.math.BigInteger value,
-                                p.score.Address targetAddress,
-                                String dataType,
-                                Object dataObj) {
+            s.java.math.BigInteger value,
+            p.score.Address targetAddress,
+            String dataType,
+            Object dataObj) {
         Objects.requireNonNull(targetAddress, "Destination can't be NULL");
         externalState.waitForCallbacks();
         IInstrumentation inst = IInstrumentation.attachedThreadInstrumentation.get();
@@ -263,7 +262,7 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
 
         var newRS = rds.getTop().getRuntimeState(task.getPrevEID());
         rds.getTop().removeRuntimeStatesByAddress(cid);
-        assert newRS!=null;
+        assert newRS != null;
         dApp.loadRuntimeState(newRS);
         dApp.invalidateStateCache();
         inst.forceNextHashCode(newRS.getGraph().getNextHash());
@@ -292,7 +291,7 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
             throw new RevertedException();
         } else if (s < Status.UserReversionEnd) {
             throw new UserRevertedException(s - Status.UserReversionStart,
-                    res.getRet()==null ? null : res.getRet().toString());
+                    res.getRet() == null ? null : res.getRet().toString());
         }
         throw new RevertedException();
     }
@@ -325,7 +324,7 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
 
     @Override
     public void avm_println(s.java.lang.String message) {
-        logger.trace(LogMarker.Trace, "PRT| " + (message!=null ? message.toString() : "<null>"));
+        logger.trace(LogMarker.Trace, "PRT| " + (message != null ? message.toString() : "<null>"));
     }
 
     @Override
@@ -363,12 +362,11 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         Objects.requireNonNull(type, "Type can't be NULL");
         Objects.requireNonNull(values, "Values can't be NULL");
         byte[] pa = null;
-        if (prevAgg!=null) {
+        if (prevAgg != null) {
             pa = prevAgg.getUnderlying();
         }
         return new ByteArray(Crypto.aggregate(
-                type.getUnderlying(), pa, values.getUnderlying()
-        ));
+                type.getUnderlying(), pa, values.getUnderlying()));
     }
 
     @Override
@@ -378,14 +376,28 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         byte[] dataBytes = data.getUnderlying();
         int nPoints;
         switch (curve.getUnderlying()) {
+            case "bn128-g1":
+                nPoints = dataBytes.length / Crypto.BLS12381_G1_LEN;
+                if (!compressed)
+                    nPoints /= 2;
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(300 * nPoints);
+                return new ByteArray(Crypto.bn128G1Add(dataBytes, compressed));
+            case "bn128-g2":
+                nPoints = dataBytes.length / Crypto.BLS12381_G2_LEN;
+                if (!compressed)
+                    nPoints /= 2;
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(8 * 300 * nPoints);
+                return new ByteArray(Crypto.bn128G2Add(dataBytes, compressed));
             case "bls12-381-g1":
                 nPoints = dataBytes.length / Crypto.BLS12381_G1_LEN;
-                if (!compressed) nPoints /= 2;
+                if (!compressed)
+                    nPoints /= 2;
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(1000 * nPoints);
                 return new ByteArray(Crypto.bls12381G1Add(dataBytes, compressed));
             case "bls12-381-g2":
                 nPoints = dataBytes.length / Crypto.BLS12381_G2_LEN;
-                if (!compressed) nPoints /= 2;
+                if (!compressed)
+                    nPoints /= 2;
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(8 * 1000 * nPoints);
                 return new ByteArray(Crypto.bls12381G2Add(dataBytes, compressed));
         }
@@ -400,15 +412,21 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         byte[] dataBytes = data.getUnderlying();
         byte[] scalarBytes = scalar.getUnderlying();
         switch (curve.getUnderlying()) {
+            case "bn128-g1":
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(12000);
+                return new ByteArray(Crypto.bn128G1ScalarMul(scalarBytes, dataBytes, compressed));
+            case "bn128-g2":
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(50000);
+                return new ByteArray(Crypto.bn128G2ScalarMul(scalarBytes, dataBytes, compressed));
             case "bls12-381-g1":
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(20000);
                 return new ByteArray(Crypto.bls12381G1ScalarMul(scalarBytes, dataBytes, compressed));
             case "bls12-381-g2":
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(95000);
                 return new ByteArray(Crypto.bls12381G2ScalarMul(scalarBytes, dataBytes, compressed));
-            }
-            throw new IllegalArgumentException("Unsupported curve " + curve);
         }
+        throw new IllegalArgumentException("Unsupported curve " + curve);
+    }
 
     @Override
     public boolean avm_ecPairingCheck(s.java.lang.String curve, ByteArray data, boolean compressed) {
@@ -417,9 +435,16 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         int nPairs;
         byte[] dataBytes = data.getUnderlying();
         switch (curve.getUnderlying()) {
+            case "bn128":
+                nPairs = dataBytes.length / (Crypto.BN128_G1_LEN + Crypto.BN128_G2_LEN);
+                if (!compressed)
+                    nPairs /= 2;
+                IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(80000 + 60000 * nPairs);
+                return Crypto.bn128PairingCheck(dataBytes, compressed);
             case "bls12-381":
                 nPairs = dataBytes.length / (Crypto.BLS12381_G1_LEN + Crypto.BLS12381_G2_LEN);
-                if (!compressed) nPairs /= 2;
+                if (!compressed)
+                    nPairs /= 2;
                 IInstrumentation.attachedThreadInstrumentation.get().chargeEnergy(200000 + 40000 * nPairs);
                 return Crypto.bls12381PairingCheck(dataBytes, compressed);
         }
@@ -472,8 +497,8 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
         }
         int len = Address.LENGTH;
         byte[][] bindexed = new byte[indexed.length()][];
-        for (int i=0; i<bindexed.length; i++) {
-            IObject v = (IObject)indexed.get(i);
+        for (int i = 0; i < bindexed.length; i++) {
+            IObject v = (IObject) indexed.get(i);
             if (!isValidEventValue(v))
                 throw new IllegalArgumentException();
             bindexed[i] = ValueCodec.encode(v);
@@ -483,8 +508,8 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
             }
         }
         byte[][] bdata = new byte[data.length()][];
-        for (int i=0; i<bdata.length; i++) {
-            IObject v = (IObject)data.get(i);
+        for (int i = 0; i < bdata.length; i++) {
+            IObject v = (IObject) data.get(i);
             if (!isValidEventValue(v))
                 throw new IllegalArgumentException();
             bdata[i] = ValueCodec.encode(v);
@@ -501,7 +526,7 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
     @Override
     public p.score.ObjectReader avm_newByteArrayObjectReader(
             s.java.lang.String codec, ByteArray byteArray) {
-        var c = codec==null ? null : codec.getUnderlying();
+        var c = codec == null ? null : codec.getUnderlying();
         if ("RLPn".equals(c)) {
             return new ObjectReaderImpl(new RLPNDataReader(byteArray.getUnderlying()));
         } else if ("RLP".equals(c)) {
@@ -513,7 +538,7 @@ public class BlockchainRuntimeImpl implements IBlockchainRuntime {
     @Override
     public p.score.ByteArrayObjectWriter avm_newByteArrayObjectWriter(
             s.java.lang.String codec) {
-        var c = codec==null ? null : codec.getUnderlying();
+        var c = codec == null ? null : codec.getUnderlying();
         if ("RLPn".equals(c)) {
             return new ObjectWriterImpl(new RLPNDataWriter());
         } else if ("RLP".equals(c)) {

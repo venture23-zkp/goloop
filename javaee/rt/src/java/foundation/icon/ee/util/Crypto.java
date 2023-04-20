@@ -17,6 +17,7 @@
 package foundation.icon.ee.util;
 
 import foundation.icon.ee.util.bls12381.BLS12381;
+import foundation.icon.ee.util.bn128.BN128CurveOps;
 import foundation.icon.ee.util.xxhash.XxHash;
 import i.RuntimeAssertionError;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -39,6 +40,8 @@ import java.util.Arrays;
 public class Crypto {
     public static int BLS12381_G1_LEN = BLS12381.G1_LEN;
     public static int BLS12381_G2_LEN = BLS12381.G2_LEN;
+    public static int BN128_G1_LEN = BN128CurveOps.G1_LEN;
+    public static int BN128_G2_LEN = BN128CurveOps.G2_LEN;
 
     public static byte[] sha3_256(byte[] msg) {
         try {
@@ -251,6 +254,46 @@ public class Crypto {
     public static boolean bls12381PairingCheck(byte[] data, boolean compressed) {
         try {
             return BLS12381.pairingCheck(data, compressed);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(e.fillInStackTrace());
+        }
+    }
+
+    public static byte[] bn128G1Add(byte[] data, boolean compressed) {
+        try {
+            return BN128CurveOps.g1Add(data, compressed);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(e.fillInStackTrace());
+        }
+    }
+
+    public static byte[] bn128G2Add(byte[] data, boolean compressed) {
+        try {
+            return BN128CurveOps.g2Add(data, compressed);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(e.fillInStackTrace());
+        }
+    }
+
+    public static byte[] bn128G1ScalarMul(byte[] scalar, byte[] data, boolean compressed) {
+        try {
+            return BN128CurveOps.g1ScalarMul(scalar, data, compressed);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(e.fillInStackTrace());
+        }
+    }
+
+    public static byte[] bn128G2ScalarMul(byte[] scalar, byte[] data, boolean compressed) {
+        try {
+            return BN128CurveOps.g2ScalarMul(scalar, data, compressed);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(e.fillInStackTrace());
+        }
+    }
+
+    public static boolean bn128PairingCheck(byte[] data, boolean compressed) {
+        try {
+            return BN128CurveOps.pairingCheck(data, compressed);
         } catch (RuntimeException e) {
             throw new IllegalArgumentException(e.fillInStackTrace());
         }

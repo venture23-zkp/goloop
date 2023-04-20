@@ -390,6 +390,8 @@ public final class Context {
 
     /**
      * Returns result of point addition as bigendian integers:
+     *   bn128-g1: (x, y) 64 bytes or (flag | x) 32 bytes for compressed
+     *   bn128-g2: (x0 * i + x1, y0 * i + y1) 128 bytes or (flag | x0 * i + x1) 64 bytes for compressed
      *   bls12-381-g1: (x, y) 96 bytes or (flag | x) 48 bytes for compressed
      *   bls12-381-g2: (x0 * i + x1, y0 * i + y1) 192 bytes or (flag | x0 * i + x1) 96 bytes for compressed
      * @param curve bls12-381-g1, bls12-381-g2
@@ -404,6 +406,8 @@ public final class Context {
 
     /**
      * Returns result of scalar multiplication as bigendian integers:
+     *   bn128-g1: (x, y) 64 bytes or (flag | x) 32 bytes for compressed
+     *   bn128-g2: (x0 * i + x1, y0 * i + y1) 128 bytes or (flag | x0 * i + x1) 64 bytes for compressed
      *   bls12-381-g1: (x, y) 96 bytes or (flag | x) 48 bytes for compressed
      *   bls12-381-g2: (x0 * i + x1, y0 * i + y1) 192 bytes or (flag | x0 * i + x1) 96 bytes for compressed
      * @param curve bls12-381-g1, bls12-381-g2
@@ -421,6 +425,9 @@ public final class Context {
      * Returns {@code true} if log_G1(a1) * log_G2(a2) + ... + log_G1(z1) + log_G2(z2) = 0
      * @param curve bls12-381
      * @param data set of alternating G1, and G2 points,
+     *   bn128:
+     *       G1: ((x, y) 64 bytes or (flag | x) 32 bytes for compressed bigendian integers) and
+     *       G2: ((x0 * i + x1, y0 * i + y1) 128 bytes or (flag | x0 * i + x1) 64 bytes for compressed bigendian integers
      *   bls12-381:
      *       G1: ((x, y) 96 bytes or (flag | x) 48 bytes for compressed bigendian integers) and
      *       G2: ((x0 * i + x1, y0 * i + y1) 192 bytes or (flag | x0 * i + x1) 96 bytes for compressed bigendian integers
